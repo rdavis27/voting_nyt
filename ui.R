@@ -52,7 +52,8 @@ shinyUI(fluidPage(
                              textInput("highcolor", "High Color", value = "green"),
                              numericInput("minlimit", "Min Limit", min = -100, max = 100, value = -100),
                              numericInput("maxlimit", "Max Limit", min = -100, max = 100, value = 100),
-                             checkboxInput("addtext", "Add Text", value = TRUE)
+                             numericInput("linewidth", "Line Width", min = 0, value = 0.5, step = 0.5),
+                             checkboxInput("addtext", "Annotate", value = TRUE)
                          ),
                          mainPanel(
                              width = 10,

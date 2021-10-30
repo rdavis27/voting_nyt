@@ -15,6 +15,10 @@ shinyServer(function(session, input, output) {
         dd <- getNYTData()
         dd <- data.frame(dd$GEOID,dd$pct_dem_lead,dd$votes_dem,dd$votes_rep,dd$votes_per_sqkm,dd$votes_total)
         names(dd) <- c("GEOID","margin","votes_dem","votes_rep","votes_per_sqkm","votes_total")
+        loc <- paste0(input$county," County, ")
+        if (loc == "(all) County, ") loc <- "All counties, "
+        title <- paste0(loc,input$state," - 2020 Presidential Race Data (percent Democrat lead)\n\n")
+        cat(title)
         return(as.data.frame(dd))
     })
     output$myScan <- renderPrint({
@@ -38,21 +42,20 @@ shinyServer(function(session, input, output) {
         return(as.data.frame(dd))
     })
     output$myPlot <- renderPlot({
-        dd <- getNYTData()
-        if (input$state != "(all)"){
-            if (input$county == "(all)"){
-                fips <- substr(ff$fips[ff$state == input$state][1],1,2)
-            }
-            else{
-                fips <- ff$fips[ff$state == input$state & ff$county == input$county]
-            }
-            fips <- paste0("^",fips)
-            ee <- dd[grepl(fips, dd$GEOID),]
+        ee <- getNYTData()
+        if (input$state == "(all)"){
+            ee <- ee[grepl("^48", dd$GEOID),] #default to TX as U.S. is too much data
+        }
+        #gg <- ggplot() + geom_sf(data = ee, aes(fill = pct_dem_lead), lwd = 0)
+        if (input$linewidth > 0){
+            gg <- ggplot() + geom_sf(data = ee, aes(fill = pct_dem_lead), lwd = input$linewidth)
+        }
+        else if (input$linewidth == 0){
+            gg <- ggplot() + geom_sf(data = ee, aes(fill = pct_dem_lead), color = NA)
         }
         else{
-            ee <- dd[grepl("^48", dd$GEOID),]
+            gg <- ggplot() + geom_sf(data = ee, aes(fill = pct_dem_lead))
         }
-        gg <- ggplot() + geom_sf(data = ee, aes(fill = pct_dem_lead), lwd = 0)
         if (input$addtext){
             gg <- gg + geom_sf_text(data = ee, aes(label = pct_dem_lead), check_overlap = TRUE)
         }
@@ -65,31 +68,22 @@ shinyServer(function(session, input, output) {
                                             high = input$highcolor, midpoint = 0,
                                             limits = c(input$minlimit, input$maxlimit))
         }
-        title <- paste0(input$county," County, ",input$state," - 2020 Presidential Race Margins (percent Democrat lead)")
+        loc <- paste0(input$county," County, ")
+        if (loc == "(all) County, ") loc <- "All counties, "
+        title <- paste0(loc,input$state," - 2020 Presidential Race Margins (percent Democrat lead)")
         gg <- gg + ggtitle(title)
         gg <- gg + xlab("Longitude\nSources: see https://econdataus.com/voting_nyt.htm")
         gg <- gg + ylab("Latitude")
         gg
     }, width = 1000, height = 800)
     output$myHist <- renderPlot({
-        dd <- getNYTData()
-        if (input$state != "(all)"){
-            if (input$county == "(all)"){
-                fips <- substr(ff$fips[ff$state == input$state][1],1,2)
-            }
-            else{
-                fips <- ff$fips[ff$state == input$state & ff$county == input$county]
-            }
-            fips <- paste0("^",fips)
-            ee <- dd[grepl(fips, dd$GEOID),]
-        }
-        else{
-            ee <- dd[grepl("^48", dd$GEOID),]
-        }
+        ee <- getNYTData()
         gg <- ggplot(ee, aes(x=pct_dem_lead))
         gg <- gg + geom_histogram(breaks=seq(input$minhist,input$maxhist,input$stephist),
                                   color="darkblue", fill="lightblue")
-        title <- paste0(input$county," County, ",input$state," - 2020 Presidential Race Margins (percent Democrat lead)")
+        loc <- paste0(input$county," County, ")
+        if (loc == "(all) County, ") loc <- "All counties, "
+        title <- paste0(loc,input$state," - 2020 Presidential Race Margins (percent Democrat lead)")
         gg <- gg + ggtitle(title)
         gg <- gg + xlab("Margin") + ylab("Count")
         gg
@@ -119,6 +113,16 @@ shinyServer(function(session, input, output) {
             #print(" AFTER getNYTData()")
             zzdd <<- dd
         }
-        return(dd)
+        if (input$state != "(all)"){
+            if (input$county == "(all)"){
+                fips <- substr(ff$fips[ff$state == input$state][1],1,2)
+            }
+            else{
+                fips <- ff$fips[ff$state == input$state & ff$county == input$county]
+            }
+            fips <- paste0("^",fips)
+            ee <- dd[grepl(fips, dd$GEOID),]
+        }
+        return(ee)
     })
 })
